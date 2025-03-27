@@ -1,0 +1,43 @@
+<view class="container">
+  <navigation-bar title="故宫AI讲解"></navigation-bar>
+  
+  <view class="content">
+    <image src="../../images/forbidden-city.jpg" mode="aspectFill" class="banner"></image>
+    
+    <view class="panel">
+      <view class="title">欢迎使用故宫AI讲解</view>
+      <view class="desc">基于您的位置和兴趣，提供个性化讲解服务</view>
+      
+      <view class="voice-selector">
+        <text>选择讲解音色：</text>
+        <radio-group bindchange="onVoiceChange">
+          <label><radio value="female" checked/>女声</label>
+          <label><radio value="male"/>男声</label>
+        </radio-group>
+      </view>
+      
+      <button type="primary" bindtap="startAIExplanation" class="start-btn">开始AI讲解</button>
+      
+      <view class="explanation-area" wx:if="{{isExplaining}}">
+        <view class="building-title">{{currentBuilding || '故宫概述'}}</view>
+        <view class="voice-status" wx:if="{{!voiceAvailable}}">
+          <text>⚠️ 语音功能暂不可用，为您展示文字讲解</text>
+        </view>
+        <view class="explanation-text">{{explanationText}}</view>
+        <button bindtap="stopExplanation" class="stop-btn" wx:if="{{voiceAvailable}}">停止讲解</button>
+        <button bindtap="stopExplanation" class="stop-btn" wx:else>结束阅读</button>
+      </view>
+      
+      <view class="auth-panel" wx:if="{{showAuthPanel}}">
+        <view class="auth-tip">需要您的位置权限以提供精准讲解</view>
+        <button bindtap="requestLocationAuth" class="auth-btn">授权位置信息</button>
+        <button bindtap="useWithoutLocation" class="skip-btn">暂不授权，使用通用讲解</button>
+      </view>
+      
+      <view class="error-tip" wx:if="{{errorMsg}}">
+        <text>{{errorMsg}}</text>
+        <button bindtap="retryLocation" wx:if="{{locationError}}" class="retry-btn">重试获取位置</button>
+      </view>
+    </view>
+  </view>
+</view>
