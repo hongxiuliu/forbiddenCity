@@ -23,5 +23,11 @@
     },
     "style": "v2",
     "sitemapLocation": "sitemap.json",
-    "libVersion": "2.25.0"
+    "libVersion": "2.25.0",
+    "plugins": {
+      "wechatSI": {
+        "version": "0.3.6",
+        "provider": "wx069ba97219f66d99"
+      }
+    }
   }

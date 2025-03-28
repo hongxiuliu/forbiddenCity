@@ -9,7 +9,9 @@ Page({
     errorMsg: '',
     locationError: false,
     hasLocationAuth: false,
-    voiceAvailable: true
+    voiceAvailable: true,
+    plugin: null,
+    innerAudioContext:null,
   },
 
   onLoad() {
@@ -20,7 +22,7 @@ Page({
   checkVoiceAvailability() {
     // 在实际应用中，这里可以检测语音功能是否真的可用
     // 现在我们模拟检测过程，假设有10%的概率不可用
-    const isAvailable = Math.random() > 0.1
+    const isAvailable = true
     this.setData({ voiceAvailable: isAvailable })
     
     if (!isAvailable) {
@@ -59,26 +61,6 @@ Page({
     })
   },
 
-  // requestLocationAuth() {
-  //   wx.authorize({
-  //     scope: 'scope.userLocation',
-  //     success: () => {
-  //       this.setData({ 
-  //         hasLocationAuth: true,
-  //         showAuthPanel: false 
-  //       })
-  //       this.getUserLocation()
-  //     },
-  //     fail: (err) => {
-  //       console.error('授权失败:', err)
-  //       this.setData({ 
-  //         showAuthPanel: true,
-  //         hasLocationAuth: false,
-  //         errorMsg: '需要位置权限才能提供精准讲解'
-  //       })
-  //     }
-  //   })
-  // },
   requestLocationAuth() {
     // 先检查当前权限状态
     wx.getSetting({
@@ -246,7 +228,7 @@ Page({
       currentBuilding: building
     })
     
-    this.startVoiceExplanation(content)
+    this.startVoiceExplanation()
   },
 
   getBuildingExplanation(building) {
@@ -265,10 +247,8 @@ Page({
     return '故宫，又称紫禁城，是中国明清两代的皇家宫殿，位于北京中轴线的中心。故宫以三大殿为中心，占地面积72万平方米，建筑面积约15万平方米，有大小宫殿七十多座，房屋九千余间。故宫始建于明成祖永乐四年（1406年），到永乐十八年（1420年）建成，成为明清两朝二十四位皇帝的皇宫。故宫是世界上现存规模最大、保存最为完整的木质结构古建筑之一，1987年被列为世界文化遗产。故宫的建筑分为外朝和内廷两部分，外朝以太和殿、中和殿、保和殿为中心，是举行重大典礼的场所；内廷以乾清宫、交泰殿、坤宁宫为中心，是皇帝和后妃居住的地方。'
   },
 
-  startVoiceExplanation(text) {
-    if (this.innerAudioContext) {
-      this.innerAudioContext.stop()
-    }
+  startVoiceExplanation() {
+  
     
     if (!this.data.voiceAvailable) {
       // 语音不可用，直接显示文字讲解
@@ -278,33 +258,36 @@ Page({
       })
       return
     }
+    const currentPlugin =requirePlugin('wechatSI')
+    this.setData({plugin :currentPlugin})
     
-    console.log(`使用${app.globalData.voiceType === 'male' ? '男声' : '女声'}朗读: ${text}`)
-    
-    // 模拟语音讲解功能
-    this.innerAudioContext = wx.createInnerAudioContext()
-    this.innerAudioContext.src = '/assets/game_play.mp3'
-    this.innerAudioContext.play()
-    
-    this.innerAudioContext.onPlay(() => {
-      wx.showToast({
-        title: '语音讲解开始',
-        icon: 'none'
-      })
-    })
-    
-    this.innerAudioContext.onError((res) => {
-      console.error('语音播放错误:', res.errMsg)
-      this.setData({ 
-        errorMsg: '语音讲解功能暂不可用，已转为文字讲解',
-        voiceAvailable: false
-      })
+    // console.log(`使用${app.globalData.voiceType === 'male' ? '男声' : '女声'}朗读: ${text}`)
+    this.playTextToVoice()
+  
+  },
+  playTextToVoice(){
+    this.data.plugin.textToSpeech({
+      lang: 'zh_CN',
+      content: this.data.explanationText,
+      success: (res) => {
+        console.log('语音合成成功', res);
+        const audioUrl = res.filename; // 获取语音合成的文件地址
+        this.playAudio(audioUrl);
+      },
+      fail: (err) => {
+        console.error('语音合成失败', err);
+      }
     })
   },
-
+  playAudio(audioUrl) {
+    this.data.innerAudioContext = wx.createInnerAudioContext();
+    this.data.innerAudioContext.src = audioUrl; // 设置音频地址
+    this.data.innerAudioContext.play(); // 播放音频
+  },
   stopExplanation() {
-    if (this.innerAudioContext) {
-      this.innerAudioContext.stop()
+    if (this.data.innerAudioContext) {
+      this.data.innerAudioContext.stop()
+      this.data.innerAudioContext=null
     }
     this.setData({ isExplaining: false })
   },
@@ -312,6 +295,7 @@ Page({
   onUnload() {
     if (this.innerAudioContext) {
       this.innerAudioContext.stop()
+      this.innerAudioContext=null
     }
   }
 })
