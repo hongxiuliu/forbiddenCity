@@ -51,6 +51,19 @@
     margin-right: 20px;
     font-size: 14px;
   }
+  .style-selector {
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+  }
+  .style-selector text {
+    margin-right: 15px;
+    font-size: 14px;
+  }
+  .style-selector label {
+    margin-right: 20px;
+    font-size: 14px;
+  }
   
   .start-btn {
     width: 100%;
@@ -84,16 +97,6 @@
     border-left: 4px solid #ffa000;
   }
   
-  .explanation-text {
-    font-size: 15px;
-    line-height: 1.8;
-    color: #333;
-    margin-bottom: 15px;
-    padding: 12px;
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  }
   
   .stop-btn {
     width: 100%;
@@ -102,6 +105,34 @@
     font-size: 14px;
     margin-top: 10px;
   }
+  .explanation-text {
+    font-size: 15px;
+  line-height: 1.8;
+  color: #333;
+  margin-bottom: 15px;
+  padding: 12px;
+  background-color: #f9f9f9;
+  width: 100%; /* 确保文本宽度占满容器 */
+  text-align: center; /* 文本居中对齐 */
+  }
+  
+  .button-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%; /* 确保按钮容器宽度占满容器 */
+  }
+  
+  .select-btn {
+    width: 48%; /* 按钮宽度占容器的48% */
+    background-color: #e1f012;
+    color: white;
+    font-size: 14px;
+    margin-top: 10px;
+    border-radius: 8px; /* 添加圆角 */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); /* 添加阴影 */
+  }
+  
+  
   
   .auth-panel {
     margin-top: 20px;

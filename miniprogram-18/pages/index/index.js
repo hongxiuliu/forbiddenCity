@@ -12,11 +12,30 @@ Page({
     voiceAvailable: true,
     plugin: null,
     innerAudioContext:null,
+    locationAccurate:false
   },
 
   onLoad() {
     this.checkVoiceAvailability()
     this.checkLocationAuth()
+  },
+  onShow(){
+     const selectPalace=wx.getStorageSync('selectedPalace')
+     if(selectPalace){
+      this.setData({
+        currentBuilding:selectPalace
+      })
+      let content = this.getBuildingExplanation(this.data.currentBuilding)
+      
+      this.setData({ 
+        explanationText: content,
+
+      })
+      
+      this.startVoiceExplanation()
+     }
+
+
   },
 
   checkVoiceAvailability() {
@@ -195,7 +214,9 @@ Page({
   onVoiceChange(e) {
     app.globalData.voiceType = e.detail.value
   },
-
+ onStyleChange(e){
+     app.globalData.styleType=e.detail.value
+ },
   startAIExplanation() {
     if (!this.data.hasLocationAuth && !app.globalData.userLocation) {
       this.setData({ 
@@ -207,6 +228,7 @@ Page({
     
     this.setData({ 
       isExplaining: true,
+      locationAccurate:false,
       errorMsg: '' 
     })
     this.getExplanationContent()
@@ -215,13 +237,14 @@ Page({
   getExplanationContent() {
     let content = ''
     let building = ''
-    
+    // building= '太和殿'
+    // content = this.getBuildingExplanation(building)
     if (app.globalData.isInForbiddenCity && app.globalData.currentBuilding) {
       building = app.globalData.currentBuilding
       content = this.getBuildingExplanation(building)
     } else {
       content = this.getGeneralExplanation()
-    }
+     }
     
     this.setData({ 
       explanationText: content,
@@ -240,7 +263,7 @@ Page({
       '坤宁宫': '坤宁宫是内廷后三宫之一，明代是皇后的寝宫。清代按照满族习俗将其改造为祭神场所，东暖阁成为皇帝大婚的洞房。康熙、同治、光绪三位皇帝的大婚都在此举行。宫中保留有萨满教祭祀的器具和布置，反映了满族的宗教信仰。'
     }
     
-    return explanations[building] || this.getGeneralExplanation()
+    return explanations[building] 
   },
 
   getGeneralExplanation() {
@@ -261,9 +284,9 @@ Page({
     const currentPlugin =requirePlugin('wechatSI')
     this.setData({plugin :currentPlugin})
     
-    // console.log(`使用${app.globalData.voiceType === 'male' ? '男声' : '女声'}朗读: ${text}`)
+     console.log(`使用${app.globalData.voiceType === 'male' ? '男声' : '女声'}${app.globalData.styleType=='professional'?'学术风格':'网红风格'}朗读`)
     this.playTextToVoice()
-  
+    
   },
   playTextToVoice(){
     this.data.plugin.textToSpeech({
@@ -291,11 +314,28 @@ Page({
     }
     this.setData({ isExplaining: false })
   },
-
+  selectPalace(){
+    
+    wx.navigateTo({
+      url: '/pages/selectPage/selectPalace'
+    });
+  },
+  notSelectPalace(){
+    this.setData({locationAccurate:true})
+  },
   onUnload() {
-    if (this.innerAudioContext) {
-      this.innerAudioContext.stop()
-      this.innerAudioContext=null
+    if (this.data.innerAudioContext) {
+      this.data.innerAudioContext.stop()
+      this.data.innerAudioContext=null
     }
+    wx.removeStorageSync('selectedPalace')
+  },
+  onHide(){
+    if (this.data.innerAudioContext) {
+      this.data.innerAudioContext.stop()
+      this.data.innerAudioContext=null
+    }
+    wx.removeStorageSync('selectedPalace')
   }
+
 })

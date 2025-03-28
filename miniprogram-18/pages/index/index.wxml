@@ -1,5 +1,5 @@
 <view class="container">
-  <navigation-bar title="故宫AI讲解"></navigation-bar>
+  <navigation-bar title="故宫讲解"></navigation-bar>
   
   <view class="content">
     <image src="../../images/forbidden-city.jpg" mode="aspectFill" class="banner"></image>
@@ -15,8 +15,14 @@
           <label><radio value="male"/>男声</label>
         </radio-group>
       </view>
-      
-      <button type="primary" bindtap="startAIExplanation" class="start-btn">开始AI讲解</button>
+      <view class="style-selector">
+        <text>选择讲解风格：</text>
+        <radio-group bindchange="onStyleChange">
+          <label><radio value="professional" checked/>学术风格</label>
+          <label><radio value="online sensation"/>网红风格</label>
+        </radio-group>
+      </view>
+      <button type="primary" bindtap="startAIExplanation" class="start-btn">开始讲解</button>
       
       <view class="explanation-area" wx:if="{{isExplaining}}">
         <view class="building-title">{{currentBuilding || '故宫概述'}}</view>
@@ -26,6 +32,12 @@
         <view class="explanation-text">{{explanationText}}</view>
         <button bindtap="stopExplanation" class="stop-btn" wx:if="{{voiceAvailable}}">停止讲解</button>
         <button bindtap="stopExplanation" class="stop-btn" wx:else>结束阅读</button>
+        <view class="explanation-text"wx:if="{{!locationAccurate}}">{{'若定位不准确可手动选择'}}</view>
+        <view class="btn-container"wx:if="{{!locationAccurate}}">
+            <button bindtap="selectPalace"class="select-btn">不准确</button>
+            <button bindtap="notSelectPalace"class="select-btn">准确</button>
+        </view>
+
       </view>
       
       <view class="auth-panel" wx:if="{{showAuthPanel}}">

@@ -1,0 +1,14 @@
+<!--pages/selectPage/selectPalace.wxml-->
+<!-- <text>pages/selectPage/selectPalace.wxml</text> -->
+<view class="container">
+  <navigation-bar title="选择讲解宫殿"></navigation-bar>
+   <view class="content">
+    <image src="../../images/forbidden-city.jpg" mode="aspectFill" class="banner"></image>
+  </view>
+  <view class="btn-container"wx:if="{{!locationAccurate}}">
+            <button bindtap="returnIndexPage"class="select-btn" data-name="太和殿">太和殿</button>
+            <button bindtap="returnIndexPage"class="select-btn"data-name="保和殿">保和殿</button>
+            <button bindtap="returnIndexPage"class="select-btn"data-name="坤宁宫">坤宁宫</button>
+            <button bindtap="returnIndexPage"class="select-btn"data-name="中和殿">中和殿</button>
+  </view>
+</view>

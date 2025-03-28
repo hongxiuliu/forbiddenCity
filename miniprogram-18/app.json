@@ -1,33 +1,34 @@
 {
-    "pages": [
-      "pages/index/index",
-      "pages/logs/logs"
-    ],
-    "window": {
-      "backgroundTextStyle": "light",
-      "navigationBarBackgroundColor": "#fff",
-      "navigationBarTitleText": "故宫AI讲解",
-      "navigationBarTextStyle": "black",
-      "navigationStyle": "custom"
-    },
-    "requiredBackgroundModes": [
-      "audio"
-    ],
-    "requiredPrivateInfos": [
-      "getLocation"
-    ],
-    "permission": {
-      "scope.userLocation": {
-        "desc": "你的位置信息将用于提供精准的故宫讲解服务"
-      }
-    },
-    "style": "v2",
-    "sitemapLocation": "sitemap.json",
-    "libVersion": "2.25.0",
-    "plugins": {
-      "wechatSI": {
-        "version": "0.3.6",
-        "provider": "wx069ba97219f66d99"
-      }
+  "pages": [
+    "pages/index/index",
+    "pages/logs/logs",
+    "pages/selectPage/selectPalace"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#fff",
+    "navigationBarTitleText": "故宫AI讲解",
+    "navigationBarTextStyle": "black",
+    "navigationStyle": "custom"
+  },
+  "requiredBackgroundModes": [
+    "audio"
+  ],
+  "requiredPrivateInfos": [
+    "getLocation"
+  ],
+  "permission": {
+    "scope.userLocation": {
+      "desc": "你的位置信息将用于提供精准的故宫讲解服务"
+    }
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "libVersion": "2.25.0",
+  "plugins": {
+    "wechatSI": {
+      "version": "0.3.6",
+      "provider": "wx069ba97219f66d99"
     }
   }
+}

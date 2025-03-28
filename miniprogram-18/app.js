@@ -6,6 +6,7 @@ App({
       userLocation: null,
       voiceType: 'female', // 默认女声
       isInForbiddenCity: false,
-      currentBuilding: null
+      currentBuilding: null,
+      styleType:'professional'
     }
   })
