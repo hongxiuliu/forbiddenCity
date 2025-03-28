@@ -11,36 +11,37 @@ Page({
     hasLocationAuth: false,
     voiceAvailable: true,
     plugin: null,
-    innerAudioContext:null,
-    locationAccurate:false
+    innerAudioContext: null,
+    locationAccurate: false,
+    locationInterval: null, // 定位定时器
+    lastLocation: null, // 上一次定位坐标
+    locationUpdateInterval: 10000, // 定位更新间隔10秒
+    significantChangeDistance: 0.0005 // 认为位置显著变化的距离阈值(约50米)
   },
 
   onLoad() {
     this.checkVoiceAvailability()
     this.checkLocationAuth()
   },
-  onShow(){
-     const selectPalace=wx.getStorageSync('selectedPalace')
-     if(selectPalace){
+
+  onShow() {
+    const selectPalace = wx.getStorageSync('selectedPalace')
+    if (selectPalace) {
       this.setData({
-        currentBuilding:selectPalace
+        currentBuilding: selectPalace
       })
       let content = this.getBuildingExplanation(this.data.currentBuilding)
       
       this.setData({ 
         explanationText: content,
-
       })
       
       this.startVoiceExplanation()
-     }
-
-
+    }
   },
 
+  // 检查语音功能可用性
   checkVoiceAvailability() {
-    // 在实际应用中，这里可以检测语音功能是否真的可用
-    // 现在我们模拟检测过程，假设有10%的概率不可用
     const isAvailable = true
     this.setData({ voiceAvailable: isAvailable })
     
@@ -49,24 +50,22 @@ Page({
     }
   },
 
+  // 检查位置权限
   checkLocationAuth() {
     wx.getSetting({
       success: (res) => {
         if (res.authSetting['scope.userLocation'] === true) {
-          // 用户已经授权
           this.setData({ 
             hasLocationAuth: true,
             showAuthPanel: false 
           })
-          this.getUserLocation()
+          this.startLocationUpdates()
         } else if (res.authSetting['scope.userLocation'] === false) {
-          // 用户已拒绝授权
           this.setData({ 
             showAuthPanel: true,
             hasLocationAuth: false 
           })
         } else {
-          // 还未询问过授权
           this.requestLocationAuth()
         }
       },
@@ -80,39 +79,56 @@ Page({
     })
   },
 
+  // 开始定期获取位置
+  startLocationUpdates() {
+    // 先获取一次位置
+    this.getUserLocation()
+    
+    // 设置定时器定期获取位置
+    this.data.locationInterval = setInterval(() => {
+      this.getUserLocation()
+    }, this.data.locationUpdateInterval)
+  },
+
+  // 停止位置更新
+  stopLocationUpdates() {
+    if (this.data.locationInterval) {
+      clearInterval(this.data.locationInterval)
+      this.data.locationInterval = null
+    }
+  },
+
+  // 请求位置授权
   requestLocationAuth() {
-    // 先检查当前权限状态
     wx.getSetting({
       success: (res) => {
         if (res.authSetting['scope.userLocation'] === undefined) {
-          // 首次询问授权
           wx.authorize({
             scope: 'scope.userLocation',
             success: () => {
               this.setData({ 
                 showAuthPanel: false,
-                hasLocationAuth: true });
-              this.getUserLocation();
+                hasLocationAuth: true 
+              })
+              this.startLocationUpdates()
             },
             fail: (err) => this.handleAuthFail(err)
-          });
+          })
         } else if (res.authSetting['scope.userLocation'] === false) {
-          // 用户之前拒绝过，直接引导去设置
-          this.showManualAuthGuide();
+          this.showManualAuthGuide()
         } else {
-          // 已有权限
-          this.getUserLocation();
+          this.startLocationUpdates()
         }
       }
-    });
+    })
   },
   
   // 处理授权失败
   handleAuthFail(err) {
     if (err.errMsg.includes('auth deny')) {
-      this.showManualAuthGuide();
+      this.showManualAuthGuide()
     } else {
-      wx.showToast({ title: '系统错误，请重试', icon: 'none' });
+      wx.showToast({ title: '系统错误，请重试', icon: 'none' })
     }
   },
   
@@ -121,34 +137,45 @@ Page({
     this.setData({ 
       showAuthPanel: true,
       errorMsg: '请在手机设置中允许位置权限'
-    });
+    })
     wx.showModal({
       title: '权限不足',
-      content: '需要您的位置权限提供讲解服务，请点击“去设置”开启权限',
+      content: '需要您的位置权限提供讲解服务，请点击"去设置"开启权限',
       confirmText: '去设置',
       success: (res) => {
-        if (res.confirm){
-          wx.openSetting();
+        if (res.confirm) {
+          wx.openSetting()
           this.setData({
-            showAuthPanel:false,
-            hasLocationAuth:true,
+            showAuthPanel: false,
+            hasLocationAuth: true,
             errorMsg: ''
           })
         } 
-       }
-    });
+      }
+    })
   },
+
+  // 获取用户位置
   getUserLocation() {
     wx.getLocation({
       type: 'gcj02',
+      isHighAccuracy: true, // 开启高精度定位
       success: (res) => {
-        const { latitude, longitude } = res
-        app.globalData.userLocation = { latitude, longitude }
-        this.checkIfInForbiddenCity(latitude, longitude)
-        this.setData({ 
-          errorMsg: '',
-          locationError: false 
-        })
+        const { latitude, longitude, accuracy } = res
+        
+        // 检查位置是否有显著变化
+        if (this.isSignificantLocationChange(latitude, longitude)) {
+          this.setData({ 
+            errorMsg: '',
+            locationError: false 
+          })
+          
+          app.globalData.userLocation = { latitude, longitude }
+          this.checkIfInForbiddenCity(latitude, longitude)
+          
+          // 更新最后位置
+          this.data.lastLocation = { latitude, longitude }
+        }
       },
       fail: (err) => {
         console.error('获取位置失败:', err)
@@ -158,6 +185,16 @@ Page({
         })
       }
     })
+  },
+
+  // 检查位置是否显著变化
+  isSignificantLocationChange(newLat, newLng) {
+    if (!this.data.lastLocation) return true
+    console.log(this.data.lastLocation.latitude, "  ",this.data.lastLocation.longitude)
+    const latDiff = Math.abs(newLat - this.data.lastLocation.latitude)
+    const lngDiff = Math.abs(newLng - this.data.lastLocation.longitude)
+    return latDiff > this.data.significantChangeDistance || 
+           lngDiff > this.data.significantChangeDistance
   },
 
   retryLocation() {
@@ -174,6 +211,7 @@ Page({
     this.startVoiceExplanation(this.getGeneralExplanation())
   },
 
+  // 检查是否在故宫范围内
   checkIfInForbiddenCity(lat, lng) {
     // 故宫大致坐标范围
     const forbiddenCityLat = 39.916
@@ -187,10 +225,19 @@ Page({
     app.globalData.isInForbiddenCity = inRange
     
     if (inRange) {
-      this.determineCurrentBuilding(lat, lng)
+      const building = this.determineCurrentBuilding(lat, lng)
+      if (building && building !== this.data.currentBuilding) {
+        // 位置变化且建筑变化时更新讲解
+        this.setData({ currentBuilding: building })
+        this.updateExplanation(building)
+      }
+    } else if (this.data.currentBuilding) {
+      // 离开故宫范围时清除当前建筑
+      this.setData({ currentBuilding: '' })
     }
   },
 
+  // 确定当前位置对应的建筑
   determineCurrentBuilding(lat, lng) {
     const buildings = [
       { name: '太和殿', lat: 39.916, lng: 116.397, radius: 0.0003 },
@@ -205,18 +252,38 @@ Page({
         Math.abs(lat - building.lat) < building.radius && 
         Math.abs(lng - building.lng) < building.radius
       ) {
-        app.globalData.currentBuilding = building.name
-        break
+        return building.name
       }
+    }
+    return null
+  },
+
+  // 更新讲解内容
+  updateExplanation(building) {
+    if (this.data.isExplaining) {
+      // 如果正在讲解，停止当前讲解
+      this.stopExplanation()
+      
+      // 获取新建筑的讲解内容
+      const content = this.getBuildingExplanation(building)
+      this.setData({ 
+        explanationText: content,
+        currentBuilding: building
+      })
+      
+      // 开始新讲解
+      this.startVoiceExplanation()
     }
   },
 
   onVoiceChange(e) {
     app.globalData.voiceType = e.detail.value
   },
- onStyleChange(e){
-     app.globalData.styleType=e.detail.value
- },
+  
+  onStyleChange(e) {
+    app.globalData.styleType = e.detail.value
+  },
+
   startAIExplanation() {
     if (!this.data.hasLocationAuth && !app.globalData.userLocation) {
       this.setData({ 
@@ -228,7 +295,7 @@ Page({
     
     this.setData({ 
       isExplaining: true,
-      locationAccurate:false,
+      locationAccurate: false,
       errorMsg: '' 
     })
     this.getExplanationContent()
@@ -237,14 +304,13 @@ Page({
   getExplanationContent() {
     let content = ''
     let building = ''
-    // building= '太和殿'
-    // content = this.getBuildingExplanation(building)
-    if (app.globalData.isInForbiddenCity && app.globalData.currentBuilding) {
-      building = app.globalData.currentBuilding
+    
+    if (app.globalData.isInForbiddenCity && this.data.currentBuilding) {
+      building = this.data.currentBuilding
       content = this.getBuildingExplanation(building)
     } else {
       content = this.getGeneralExplanation()
-     }
+    }
     
     this.setData({ 
       explanationText: content,
@@ -271,71 +337,85 @@ Page({
   },
 
   startVoiceExplanation() {
-  
-    
     if (!this.data.voiceAvailable) {
-      // 语音不可用，直接显示文字讲解
       wx.showToast({
         title: '语音不可用，已转为文字讲解',
         icon: 'none'
       })
       return
     }
-    const currentPlugin =requirePlugin('wechatSI')
-    this.setData({plugin :currentPlugin})
     
-     console.log(`使用${app.globalData.voiceType === 'male' ? '男声' : '女声'}${app.globalData.styleType=='professional'?'学术风格':'网红风格'}朗读`)
+    const currentPlugin = requirePlugin('wechatSI')
+    this.setData({ plugin: currentPlugin })
+    
+    console.log(`使用${app.globalData.voiceType === 'male' ? '男声' : '女声'}${app.globalData.styleType == 'professional' ? '学术风格' : '网红风格'}朗读`)
     this.playTextToVoice()
-    
   },
-  playTextToVoice(){
+  
+  playTextToVoice() {
     this.data.plugin.textToSpeech({
       lang: 'zh_CN',
       content: this.data.explanationText,
       success: (res) => {
-        console.log('语音合成成功', res);
-        const audioUrl = res.filename; // 获取语音合成的文件地址
-        this.playAudio(audioUrl);
+        console.log('语音合成成功', res)
+        const audioUrl = res.filename
+        this.playAudio(audioUrl)
       },
       fail: (err) => {
-        console.error('语音合成失败', err);
+        console.error('语音合成失败', err)
       }
     })
   },
+  
   playAudio(audioUrl) {
-    this.data.innerAudioContext = wx.createInnerAudioContext();
-    this.data.innerAudioContext.src = audioUrl; // 设置音频地址
-    this.data.innerAudioContext.play(); // 播放音频
+    if (this.data.innerAudioContext) {
+      this.data.innerAudioContext.stop()
+      this.data.innerAudioContext = null
+    }
+    
+    this.data.innerAudioContext = wx.createInnerAudioContext()
+    this.data.innerAudioContext.src = audioUrl
+    this.data.innerAudioContext.play()
+    
+    // 监听播放结束事件
+    this.data.innerAudioContext.onEnded(() => {
+      this.setData({ isExplaining: false })
+    })
   },
+  
   stopExplanation() {
     if (this.data.innerAudioContext) {
       this.data.innerAudioContext.stop()
-      this.data.innerAudioContext=null
+      this.data.innerAudioContext = null
     }
     this.setData({ isExplaining: false })
   },
-  selectPalace(){
-    
+  
+  selectPalace() {
     wx.navigateTo({
       url: '/pages/selectPage/selectPalace'
-    });
+    })
   },
-  notSelectPalace(){
-    this.setData({locationAccurate:true})
+  
+  notSelectPalace() {
+    this.setData({ locationAccurate: true })
   },
+  
   onUnload() {
+    this.stopLocationUpdates()
     if (this.data.innerAudioContext) {
       this.data.innerAudioContext.stop()
-      this.data.innerAudioContext=null
+      this.data.innerAudioContext = null
     }
     wx.removeStorageSync('selectedPalace')
   },
-  onHide(){
+  
+  onHide() {
+    this.stopLocationUpdates()
     if (this.data.innerAudioContext) {
       this.data.innerAudioContext.stop()
-      this.data.innerAudioContext=null
+      this.data.innerAudioContext = null
     }
     wx.removeStorageSync('selectedPalace')
   }
-
 })

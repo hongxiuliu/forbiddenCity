@@ -19,7 +19,8 @@
       "disablePlugins": [],
       "outputPath": ""
     },
-    "sourceMap": true
+    "sourceMap": true,
+    "ignoreUploadUnusedFiles": false
   },
   "condition": {},
   "editorSetting": {
