@@ -175,8 +175,8 @@ Page({
 
   checkIfInForbiddenCity(lat, lng) {
     // 故宫大致坐标范围
-    const forbiddenCityLat = 39.916
-    const forbiddenCityLng = 116.397
+    const forbiddenCityLat = 39.916//北纬
+    const forbiddenCityLng = 116.397//东经
     const radius = 0.0045 // 大约500米
     
     const inRange = 
