@@ -18,8 +18,9 @@
       <view class="style-selector">
         <text>选择讲解风格：</text>
         <radio-group bindchange="onStyleChange">
-          <label><radio value="professional" checked/>学术风格</label>
-          <label><radio value="online sensation"/>网红风格</label>
+          <label><radio value="professional" checked/>学术</label>
+          <label><radio value="humor"checked/>幽默</label>
+          <label><radio value="vivid" checked/>生动</label>
         </radio-group>
       </view>
       <button type="primary" bindtap="startAIExplanation" class="start-btn">开始讲解</button>
